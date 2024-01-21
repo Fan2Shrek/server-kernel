@@ -1,0 +1,3 @@
+[submodule ".boing"]
+	path = .boing
+	url = git@github.com:BatMaxou/boing.git
