@@ -4,8 +4,10 @@ namespace App;
 
 use App\Clock\RunningClock;
 use App\Clock\RunningClockInterface;
-use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\Clock\NativeClock;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 
 /**
  * @author Pierre Ambroise<pierre27.ambroise@gmail.com>
@@ -41,7 +43,18 @@ final class ServerKernel extends Kernel
     private function handleCurrentQueue(): void
     {
         foreach ($this->requestQueue as $request) {
-            $this->handle($request);
+            $this->handleReuqest($request);
         }
+    }
+
+    public function handleReuqest(Request $request): void
+    {
+        $response = $this->handle($request);
+        $this->handleResponse($response);
+    }
+
+    public function handleResponse(Response $response): void
+    {
+        $response->send();
     }
 }
