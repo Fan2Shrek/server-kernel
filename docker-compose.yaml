@@ -6,7 +6,7 @@ services:
       context: .
       args:
         - PHP_VERSION=8.3
-      dockerfile: .boing/docker/app/symfony/Dockerfile
+      dockerfile: docker/Dockerfile
     ports:
       - 8000:80
     volumes:
