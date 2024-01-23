@@ -20,6 +20,8 @@ final class ServerKernel extends Kernel
 
     private RunningClockInterface $innerClock;
 
+    private \Socket $serverSocket;
+
     public function boot(): void
     {
         parent::boot();
@@ -29,25 +31,57 @@ final class ServerKernel extends Kernel
     public function start(): void
     {
         $this->stop = false;
+
+        $this->configureSocket();
+        $this->run();
+    }
+
+    private function run(): void
+    {
         $this->innerClock->start();
 
         while (!$this->stop) {
+            $this->refreshRequestQueue();
             if (!empty($this->requestQueue)) {
                 $this->handleCurrentQueue();
             }
         }
 
         $this->innerClock->stop();
+        $this->stop();
+        $this->shutdown();
+    }
+
+    public function stop(): void
+    {
+        socket_close($this->serverSocket);
+    }
+
+    private function refreshRequestQueue(): void
+    {
+        $clientSocket = socket_accept($this->serverSocket);
+        $request = socket_read($clientSocket, 1024);
+
+        if ($request instanceof Request) {
+            $this->requestQueue[] = $request;
+        }
+    }
+
+    private function configureSocket(): void
+    {
+        $this->serverSocket = \socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        socket_bind($this->serverSocket, '127.0.0.1', 8000);
+        socket_listen($this->serverSocket);
     }
 
     private function handleCurrentQueue(): void
     {
         foreach ($this->requestQueue as $request) {
-            $this->handleReuqest($request);
+            $this->handleRequest($request);
         }
     }
 
-    public function handleReuqest(Request $request): void
+    public function handleRequest(Request $request): void
     {
         $response = $this->handle($request);
         $this->handleResponse($response);
@@ -55,6 +89,6 @@ final class ServerKernel extends Kernel
 
     public function handleResponse(Response $response): void
     {
-        $response->send();
+        socket_write($this->serverSocket, $response, strlen($response));
     }
 }
