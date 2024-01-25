@@ -11,11 +11,6 @@ class ClientRequestResolver implements ResolverInterface
     {
         return [
             fn () => new ClientRequest(),
-            function () {
-                return new \ReflectionFunction(function () {
-                    return new ClientRequest();
-                });
-            },
         ];
     }
 }

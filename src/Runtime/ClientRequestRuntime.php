@@ -17,9 +17,10 @@ class ClientRequestRuntime extends SymfonyRuntime
 
     public function getRunner(?object $application): RunnerInterface
     {
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($application instanceof ClientRequest) {
-            return new ClientRequestRunner($socket, Request::createFromGlobals());
+            $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+            socket_connect($socket, '127.0.0.1', $_ENV['KERNEL_PORT']);
+            return new ClientRequestRunner($socket, ClientRequest::createFromGlobals());
         }
 
         return parent::getRunner($application);

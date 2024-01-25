@@ -61,6 +61,9 @@
         "symfony": {
             "allow-contrib": false,
             "require": "6.4.*"
+        },
+        "runtime": {
+            "class": "App\\Runtime\\ClientRequestRuntime"
         }
     }
 }

@@ -22,6 +22,14 @@ final class ServerKernel extends Kernel
 
     private \Socket $serverSocket;
 
+    private int $port;
+
+    public function __construct(string $environment, bool $debug, int $port)
+    {
+        parent::__construct($environment, $debug);
+        $this->port = $port;
+    }
+
     public function boot(): void
     {
         parent::boot();
@@ -55,22 +63,25 @@ final class ServerKernel extends Kernel
     public function stop(): void
     {
         socket_close($this->serverSocket);
+        $this->shutdown();
     }
 
     private function refreshRequestQueue(): void
     {
         $clientSocket = socket_accept($this->serverSocket);
-        $request = socket_read($clientSocket, 1024);
+        $request = socket_read($clientSocket, 65536);
 
-        if ($request instanceof Request) {
-            $this->requestQueue[] = $request;
+        $realRequest = unserialize($request);
+        if ($realRequest instanceof Request) {
+            /** @todo we should no use array here */
+            $this->requestQueue[] = ['request' => $realRequest, 'socket' => $clientSocket];
         }
     }
 
     private function configureSocket(): void
     {
         $this->serverSocket = \socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_bind($this->serverSocket, '127.0.0.1', 8000);
+        socket_bind($this->serverSocket, '127.0.0.1', $this->port);
         socket_listen($this->serverSocket);
     }
 
@@ -81,14 +92,27 @@ final class ServerKernel extends Kernel
         }
     }
 
-    public function handleRequest(Request $request): void
+    public function handleRequest(array $request): void
     {
-        $response = $this->handle($request);
-        $this->handleResponse($response);
+        $response = $this->handle($request['request']);
+
+        $this->handleResponse($response, $request['socket']);
+        $this->removeRequest();
     }
 
-    public function handleResponse(Response $response): void
+    public function removeRequest(): void
     {
-        socket_write($this->serverSocket, $response, strlen($response));
+        array_shift($this->requestQueue);
+    }
+
+    public function handle(Request $request, int $type = HttpKernelInterface::MAIN_REQUEST, bool $catch = true): Response
+    {
+        return $this->getHttpKernel()->handle($request, $type, $catch);
+    }
+
+    public function handleResponse(Response $response, \Socket $clientSocket): void
+    {
+        $message = serialize($response);
+        socket_write($clientSocket, $message, strlen($message));
     }
 }
