@@ -44,6 +44,10 @@ final class ServerKernel extends Kernel
         $this->run();
     }
 
+    /**
+     * @todo we should use a loop here
+     * @todo we should take advantage of the clock
+     */
     private function run(): void
     {
         $this->innerClock->start();
