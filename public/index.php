@@ -1,12 +1,8 @@
 <?php
 
-use App\ClientRequest;
-use App\Kernel;
+
+use App\Client;
 
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
-// return function (array $context) {
-//     return new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
-// };
-
-return fn () => new ClientRequest();
+return fn (string $host, int $port) => new Client($host, $port);

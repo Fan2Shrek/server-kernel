@@ -4,28 +4,27 @@ namespace App\Runtime;
 
 use Symfony\Component\Runtime\RunnerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use App\Interface\ClientInterface;
+use Symfony\Component\HttpKernel\TerminableInterface;
 
 class ClientRequestRunner implements RunnerInterface
 {
     public function __construct(
-        private readonly \Socket $socket,
+        private readonly ClientInterface $client,
         private readonly Request $request,
     ) {
     }
 
-    /**
-     * @todo Maybe externalise this logic to a dedicated class
-     */
     public function run(): int
     {
-        $message = serialize($this->request);
-        socket_write($this->socket, $message, strlen($message));
+        $this->client->sendRequest($this->request);
+        $response = $this->client->receiveResponse();
 
-        $response = socket_read($this->socket, 1048576);
-        $response = unserialize($response);
-        socket_close($this->socket);
+        $this->client->handleResponse($response);
 
-        $response->send();
+        if ($this->client instanceof TerminableInterface) {
+            $this->client->terminate($this->request, $response);
+        }
 
         return 0;
     }

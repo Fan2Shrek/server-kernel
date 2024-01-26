@@ -2,6 +2,7 @@
 
 namespace App\Runtime;
 
+use App\Client;
 use Symfony\Component\Runtime\ResolverInterface;
 use Symfony\Component\Runtime\RunnerInterface;
 use Symfony\Component\Runtime\SymfonyRuntime;
@@ -10,17 +11,30 @@ use Symfony\Component\HttpFoundation\Request;
 
 class ClientRequestRuntime extends SymfonyRuntime
 {
-    public function getResolver(callable $callable, \ReflectionFunction $reflector = null): ResolverInterface
+    public function getArgument(\ReflectionParameter $parameter, ?string $type): mixed
     {
-        return parent::getResolver($callable, $reflector);
+        return match ($parameter->getName()) {
+            'host' => $this->getEnvOrThrow('KERNEL_HOST'),
+            'port' => $this->getEnvOrThrow('KERNEL_PORT'),
+            default =>  parent::getArgument($parameter, $type),
+        };
+    }
+
+    private function getEnvOrThrow(string $key): string
+    {
+        $value = $_ENV[$key] ?? null;
+
+        if ($value === null) {
+            throw new \RuntimeException(sprintf('Missing env variable "%s"', $key));
+        }
+
+        return $value;
     }
 
     public function getRunner(?object $application): RunnerInterface
     {
-        if ($application instanceof ClientRequest) {
-            $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-            socket_connect($socket, '127.0.0.1', $_ENV['KERNEL_PORT']);
-            return new ClientRequestRunner($socket, ClientRequest::createFromGlobals());
+        if ($application instanceof Client) {
+            return new ClientRequestRunner($application, ClientRequest::createFromGlobals());
         }
 
         return parent::getRunner($application);
