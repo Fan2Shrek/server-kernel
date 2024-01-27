@@ -12,9 +12,6 @@ use Symfony\Component\Console\Input\InputOption;
 #[AsCommand('start:kernel')]
 class StartKernelCommand extends Command
 {
-    /**
-     * @todo Add port || host options
-     */
     public function configure(): void
     {
         $this->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Port', $_ENV['KERNEL_PORT']);
