@@ -46,6 +46,7 @@ final class ServerKernel extends Kernel
 
     /**
      * @todo we should take advantage of the clock
+     * maybe we can sleep the thread for a while
      */
     private function run(): void
     {
@@ -76,8 +77,7 @@ final class ServerKernel extends Kernel
 
         $realRequest = unserialize($request);
         if ($realRequest instanceof Request) {
-            /** @todo we should no use array here */
-            $this->requestQueue[] = ['request' => $realRequest, 'socket' => $clientSocket];
+            $this->requestQueue[] = new ServerRequest($realRequest, $clientSocket);
         }
     }
 
@@ -95,11 +95,11 @@ final class ServerKernel extends Kernel
         }
     }
 
-    public function handleRequest(array $request): void
+    public function handleRequest(ServerRequest $request): void
     {
-        $response = $this->handle($request['request']);
+        $response = $this->handle($request->getRequest());
 
-        $this->handleResponse($response, $request['socket']);
+        $this->handleResponse($response, $request->getSocket());
         $this->removeRequest();
     }
 
