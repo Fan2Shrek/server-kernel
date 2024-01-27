@@ -4,7 +4,7 @@ services:
   php:
     build:
       context: .
-      dockerfile: ./docker/Dockerfile
+      dockerfile: ./docker/Php/Dockerfile
     volumes:
       - .:/srv
     working_dir: /srv
@@ -15,7 +15,7 @@ services:
       context: .
       args:
         - PHP_VERSION=8.3
-      dockerfile: .boing/docker/app/symfony/Dockerfile
+      dockerfile: ./docker/App/Dockerfile
     ports:
       - 8000:80
     volumes:
