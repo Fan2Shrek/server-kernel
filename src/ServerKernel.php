@@ -85,7 +85,7 @@ final class ServerKernel extends Kernel
     private function configureSocket(): void
     {
         $this->serverSocket = \socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_bind($this->serverSocket, '127.0.0.1', $this->port);
+        socket_bind($this->serverSocket, '0.0.0.0', $this->port);
         socket_listen($this->serverSocket);
     }
 
