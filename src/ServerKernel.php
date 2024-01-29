@@ -73,9 +73,18 @@ final class ServerKernel extends Kernel
     private function refreshRequestQueue(): void
     {
         $clientSocket = socket_accept($this->serverSocket);
-        $request = socket_read($clientSocket, 2 ** 16);
+        $request = socket_read($clientSocket, 2 ** 17);
 
-        $realRequest = unserialize($request);
+        try {
+            $realRequest = unserialize($request);
+        } catch (\Exception $e) {
+            /**
+             * @todo we should still send a response to the client
+             * or at least handle the exception
+             */
+            return;
+        }
+
         if ($realRequest instanceof Request) {
             $this->requestQueue[] = new ServerRequest($realRequest, $clientSocket);
         }
