@@ -27,7 +27,7 @@ class Client implements ClientInterface, TerminableInterface
     {
         $response = '';
 
-        while ($data = socket_read($this->socket, 2 ** 6)) {
+        while ($data = socket_read($this->socket, 2 ** 16)) {
             $response .= $data;
         }
 
