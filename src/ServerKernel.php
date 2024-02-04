@@ -24,6 +24,10 @@ final class ServerKernel extends Kernel
 
     private int $port;
 
+    private bool $sleep = false;
+
+    private \DateTimeImmutable $lastRequest;
+
     public function __construct(string $environment, bool $debug, int $port)
     {
         parent::__construct($environment, $debug);
@@ -44,24 +48,34 @@ final class ServerKernel extends Kernel
         $this->run();
     }
 
-    /**
-     * @todo we should take advantage of the clock
-     * maybe we can sleep the thread for a while
-     */
     private function run(): void
     {
         $this->innerClock->start();
+        $this->lastRequest = new \DateTimeImmutable();
 
         while (!$this->stop) {
-            $this->refreshRequestQueue();
-            if (!empty($this->requestQueue)) {
-                $this->handleCurrentQueue();
-            }
+            $this->doRun();
         }
 
         $this->innerClock->stop();
         $this->stop();
         $this->shutdown();
+    }
+
+    private function doRun(): void
+    {
+        if (!$this->sleep && $this->innerClock->now()->getTimestamp() - $this->lastRequest->getTimestamp() > 10) {
+            $this->enterSleepMode();
+        }
+
+        $this->refreshRequestQueue();
+        if (!empty($this->requestQueue)) {
+            if ($this->sleep) {
+                $this->recoverSleepMode();
+            }
+
+            $this->handleCurrentQueue();
+        }
     }
 
     public function stop(): void
@@ -73,6 +87,10 @@ final class ServerKernel extends Kernel
     private function refreshRequestQueue(): void
     {
         $clientSocket = socket_accept($this->serverSocket);
+        if (false === $clientSocket) {
+            return;
+        }
+
         $request = socket_read($clientSocket, 2 ** 17);
 
         try {
@@ -86,6 +104,7 @@ final class ServerKernel extends Kernel
         }
 
         if ($realRequest instanceof Request) {
+            $this->lastRequest = new \DateTimeImmutable();
             $this->requestQueue[] = new ServerRequest($realRequest, $clientSocket);
         }
     }
@@ -95,6 +114,9 @@ final class ServerKernel extends Kernel
         $this->serverSocket = \socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         socket_bind($this->serverSocket, '0.0.0.0', $this->port);
         socket_listen($this->serverSocket);
+        // Allow *asynchronous* mode
+        // @see https://www.php.net/manual/en/function.socket-set-nonblock.php
+        socket_set_nonblock($this->serverSocket);
     }
 
     private function handleCurrentQueue(): void
@@ -126,5 +148,19 @@ final class ServerKernel extends Kernel
     {
         $message = serialize($response);
         socket_write($clientSocket, $message, strlen($message));
+    }
+
+    /**
+     * @todo we can try to do some things like rebuild container or something else
+     */
+    private function enterSleepMode(): void
+    {
+        $this->innerClock->sleep(2);
+        $this->sleep = true;
+    }
+
+    private function recoverSleepMode(): void
+    {
+        $this->sleep = false;
     }
 }
