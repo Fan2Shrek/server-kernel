@@ -14,7 +14,9 @@ class StartKernelCommand extends Command
 {
     public function configure(): void
     {
-        $this->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Port', $_ENV['KERNEL_PORT']);
+        $this
+            ->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Port', $_ENV['KERNEL_PORT'])
+            ->addOption('output', null, InputOption::VALUE_NEGATABLE, default: true);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -26,6 +28,11 @@ class StartKernelCommand extends Command
         $output->writeln('Starting booted...');
 
         $output->writeln('Kernel is ready to handle connection !');
+
+        if ($input->getOption('output')) {
+            $kernel->setOutput($output);
+        }
+
         try {
             $kernel->start();
         } catch (\Throwable $e) {

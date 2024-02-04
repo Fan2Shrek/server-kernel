@@ -5,6 +5,7 @@ namespace App;
 use App\Clock\RunningClock;
 use App\Clock\RunningClockInterface;
 use Symfony\Component\Clock\NativeClock;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -27,6 +28,8 @@ final class ServerKernel extends Kernel
     private bool $sleep = false;
 
     private \DateTimeImmutable $lastRequest;
+
+    private ?OutputInterface $output = null;
 
     public function __construct(string $environment, bool $debug, int $port)
     {
@@ -128,6 +131,7 @@ final class ServerKernel extends Kernel
 
     public function handleRequest(ServerRequest $request): void
     {
+        $this->print('Request received...');
         $response = $this->handle($request->getRequest());
 
         $this->handleResponse($response, $request->getSocket());
@@ -155,6 +159,7 @@ final class ServerKernel extends Kernel
      */
     private function enterSleepMode(): void
     {
+        $this->print('Entering sleep mode...');
         $this->innerClock->sleep(2);
         $this->sleep = true;
     }
@@ -162,5 +167,18 @@ final class ServerKernel extends Kernel
     private function recoverSleepMode(): void
     {
         $this->sleep = false;
+        $this->print('Existing sleep mode...');
+    }
+
+    public function setOutput(OutputInterface $output): void
+    {
+        $this->output = $output;
+    }
+
+    public function print(string $message): void
+    {
+        if (null !== $this->output) {
+            $this->output->writeln($message);
+        }
     }
 }
