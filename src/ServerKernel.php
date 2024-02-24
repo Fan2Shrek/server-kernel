@@ -154,12 +154,10 @@ final class ServerKernel extends Kernel
         socket_write($clientSocket, $message, strlen($message));
     }
 
-    /**
-     * @todo we can try to do some things like rebuild container or something else
-     */
     private function enterSleepMode(): void
     {
         $this->print('Entering sleep mode...');
+        $this->clear();
         $this->innerClock->sleep(2);
         $this->sleep = true;
     }
@@ -180,5 +178,13 @@ final class ServerKernel extends Kernel
         if (null !== $this->output) {
             $this->output->writeln($message);
         }
+    }
+
+    /**
+     * @todo we can try to do some things like rebuild container or something else
+     */
+    private function clear(): void
+    {
+        $this->container->get('services_resetter')->reset();
     }
 }
